@@ -1,6 +1,7 @@
 package instagram
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -26,6 +27,17 @@ var Extractor = &models.Extractor{
 	Redirect:   false,
 
 	GetFunc: func(ctx *models.ExtractorContext) (*models.ExtractorResponse, error) {
+		// method 0: get media from the web route definition
+		// (what the logged-out web page itself uses)
+		media, err0 := GetRouteMedia(ctx)
+		if err0 == nil {
+			return &models.ExtractorResponse{
+				Media: media,
+			}, nil
+		}
+		if errors.Is(err0, util.ErrUnavailable) {
+			return nil, err0
+		}
 		// method 1: get media from GQL web API
 		media, err1 := GetGQLMedia(ctx)
 		if err1 == nil {
@@ -47,7 +59,7 @@ var Extractor = &models.Extractor{
 				Media: media,
 			}, nil
 		}
-		return nil, fmt.Errorf("all methods failed: %w; %w; %w", err1, err2, err3)
+		return nil, fmt.Errorf("all methods failed: %w; %w; %w; %w", err0, err1, err2, err3)
 	},
 }
 
