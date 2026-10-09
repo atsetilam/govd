@@ -68,7 +68,17 @@ live test (needs network, skipped unless `IGID` is set; use the shortcode of any
 
 it runs every method, with and without the chrome impersonation client, and logs the formats each one returns.
 
-**stories do not work.** the story extractor only uses igram.world, which now rejects the signed request (`401 invalid signature`). there is no logged-out alternative: the story pages on instagram.com show a login wall to anonymous visitors and the route definition for them carries no media. restoring stories needs a logged-in instagram session cookie (supplied through the extractor cookies) or a new signing scheme for igram.world. a session cookie from a secondary account can expire or be challenged by instagram without notice.
+**stories** (`story.go`) need a logged-in session. the extractor reads the story through `/api/v1/media/<story id>/info/` on instagram.com, the private api the web app uses, with the cookies from `private/cookies/instagram.txt` (netscape format; the cookies `sessionid` and `csrftoken` are required). use a throwaway account, not a personal one, and export the cookies from a logged-in browser session of that account. the file must be readable by the bot only (`chmod 600`); it is git-ignored and never committed.
+
+the cookies are sent on that one request only. posts, reels and share links run without them (`withoutCookies`), and the file download that follows a story is made without them too. `go test ./internal/extractors/instagram/` checks this with fake cookies.
+
+when the session expires, is logged out or is challenged by instagram, the story request answers 401/403 (or a login page) and the user gets the bot's "authentication needed" message. the extractor does not retry. to fix it, log in to the throwaway account in a browser, export the cookies again to `private/cookies/instagram.txt` and restart the bot (cookies are cached in memory until restart). a story older than 24 hours answers 404 and is reported as unavailable. if instagram asks the account for a checkpoint, solve it in the browser first.
+
+live check (uses the real cookie file, one request; run from the repository):
+
+    IGSTORY=https://www.instagram.com/stories/<user>/<id> go test -run TestLiveStory -v ./internal/extractors/instagram/
+
+the old igram.world story path was removed: it now sits behind a captcha for anything that is not a browser.
 
 ## license
 

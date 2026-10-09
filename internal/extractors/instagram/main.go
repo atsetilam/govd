@@ -27,6 +27,8 @@ var Extractor = &models.Extractor{
 	Redirect:   false,
 
 	GetFunc: func(ctx *models.ExtractorContext) (*models.ExtractorResponse, error) {
+		// posts and reels work logged out: never send the session cookies
+		withoutCookies(ctx)
 		// method 0: get media from the web route definition
 		// (what the logged-out web page itself uses)
 		media, err0 := GetRouteMedia(ctx)
@@ -67,12 +69,12 @@ var StoriesExtractor = &models.Extractor{
 	ID:          "instagram",
 	DisplayName: "Instagram Stories",
 
-	URLPattern: regexp.MustCompile(`https:\/\/(www\.)?(?:dd)?instagram\.com\/stories\/[a-zA-Z0-9._]+\/(?P<id>\d+)`),
+	URLPattern: regexp.MustCompile(`https:\/\/(www\.)?(?:dd)?instagram\.com\/stories\/(?P<user>[a-zA-Z0-9._]+)\/(?P<id>\d+)`),
 	Host:       instagramHost,
 	Hidden:     true,
 
 	GetFunc: func(ctx *models.ExtractorContext) (*models.ExtractorResponse, error) {
-		media, err := GetIGramStory(ctx)
+		media, err := GetStoryMedia(ctx)
 		return &models.ExtractorResponse{
 			Media: media,
 		}, err
@@ -89,6 +91,7 @@ var ShareURLExtractor = &models.Extractor{
 	Redirect: true,
 
 	GetFunc: func(ctx *models.ExtractorContext) (*models.ExtractorResponse, error) {
+		withoutCookies(ctx)
 		redirectURL, err := ctx.FetchLocation(ctx.ContentURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get url location: %w", err)
