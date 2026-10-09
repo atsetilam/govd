@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/govdbot/govd/internal/database"
@@ -132,6 +133,11 @@ func downloadFormat(
 ) (*models.DownloadedFormat, error) {
 	if len(format.URL) == 0 {
 		return nil, fmt.Errorf("no URL found for selected format")
+	}
+	for _, u := range format.URL {
+		if strings.TrimSpace(u) == "" {
+			return nil, fmt.Errorf("empty URL found for selected format")
+		}
 	}
 
 	fileName := format.GetFileName()

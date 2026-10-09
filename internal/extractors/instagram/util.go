@@ -71,6 +71,12 @@ func ParseGQLMedia(ctx *models.ExtractorContext, data *Media) (*models.Media, er
 
 	switch data.Typename {
 	case "GraphVideo", "XDTGraphVideo":
+		if strings.TrimSpace(data.VideoURL) == "" {
+			// video_url assente (es. reel copyright_blocked): il video
+			// non è scaricabile, il media va marcato non disponibile
+			// e non consegnato al download.
+			return nil, util.ErrUnavailable
+		}
 		item := media.NewItem()
 		item.AddFormats(&models.MediaFormat{
 			FormatID:     "video",
@@ -109,6 +115,11 @@ func ParseGQLMedia(ctx *models.ExtractorContext, data *Media) (*models.Media, er
 				}
 
 				if isVideo {
+					if strings.TrimSpace(node.VideoURL) == "" {
+						// child video senza video_url (es. copyright_blocked):
+						// non scaricabile, il format va saltato.
+						continue
+					}
 					item.AddFormats(&models.MediaFormat{
 						FormatID:     "video",
 						Type:         database.MediaTypeVideo,
